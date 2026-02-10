@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Planning Hebdomadaire</title>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #2d3748; font-size: 26px; margin-bottom: 8px; }
+        .subtitle { color: #718096; font-size: 15px; margin-bottom: 24px; }
+        .intro {
+            color: #4a5568;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+            padding: 16px;
+            background: #fff5f5;
+            border-radius: 8px;
+            border-left: 4px solid #f56565;
+        }
+        .intro strong { color: #c53030; }
+        .section { margin-bottom: 32px; }
+        .section-title {
+            color: #2d3748;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .day-timeline {
+            margin-bottom: 24px;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .day-name {
+            font-weight: 700;
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+        .visual-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .input-group {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .input-label {
+            font-size: 12px;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+        }
+        input[type="time"], input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .field-label {
+            color: #4a5568;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .radio-label:hover { background: #edf2f7; }
+        .radio-label input[type="radio"]:checked + span {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .radio-label input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .quick-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+        }
+        .quick-info input { margin-top: 6px; }
+        .generate-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+        }
+        .generate-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .final-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 32px;
+        }
+        .final-box h3 { font-size: 22px; margin-bottom: 12px; }
+        .final-box p { font-size: 16px; margin-bottom: 16px; }
+        @media (max-width: 768px) {
+            .visual-inputs { grid-template-columns: 1fr; }
+            .radio-group { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 Mon Planning Hebdomadaire COMPLET</h1>
+        <p class="subtitle">Pour que je puisse caler tes séances intelligemment</p>
+        
+        <div class="intro">
+            <strong>⚠️ Sois honnête et précis :</strong> Je veux voir EXACTEMENT quand tu bosses, quand tu dors, quand tu rentres chez toi.
+        </div>
+
+        <form id="planningForm">
+            <div class="section">
+                <div class="section-title">1. Mon planning heure par heure</div>
+                
+                <div class="day-timeline">
+                    <div class="day-name">LUNDI</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="lundi-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="lundi-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="lundi-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="lundi-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="lundi-autre">
+                    </div>
+                </div>
+
+                <div class="day-timeline">
+                    <div class="day-name">MARDI</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="mardi-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="mardi-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="mardi-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="mardi-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="mardi-autre">
+                    </div>
+                </div>
+
+                <div class="day-timeline">
+                    <div class="day-name">MERCREDI</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="mercredi-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="mercredi-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="mercredi-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="mercredi-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="mercredi-autre">
+                    </div>
+                </div>
+
+                <div class="day-timeline">
+                    <div class="day-name">JEUDI</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="jeudi-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="jeudi-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="jeudi-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="jeudi-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="jeudi-autre">
+                    </div>
+                </div>
+
+                <div class="day-timeline">
+                    <div class="day-name">VENDREDI</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="vendredi-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="vendredi-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="vendredi-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="vendredi-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="vendredi-autre">
+                    </div>
+                </div>
+
+                <div class="day-timeline">
+                    <div class="day-name">SAMEDI</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="samedi-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="samedi-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="samedi-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="samedi-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="samedi-autre">
+                    </div>
+                </div>
+
+                <div class="day-timeline">
+                    <div class="day-name">DIMANCHE</div>
+                    <div class="visual-inputs">
+                        <div class="input-group">
+                            <label class="input-label">🌙 Réveil</label>
+                            <input type="time" name="dimanche-reveil">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">😴 Coucher</label>
+                            <input type="time" name="dimanche-coucher">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail DE</label>
+                            <input type="time" name="dimanche-travail-debut">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">💼 Travail À</label>
+                            <input type="time" name="dimanche-travail-fin">
+                        </div>
+                    </div>
+                    <div class="quick-info">
+                        <input type="text" placeholder="Autres contraintes..." name="dimanche-autre">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">2. Infos pratiques</div>
+                
+                <label class="field-label">⏱️ Temps de trajet (minutes)</label>
+                <input type="number" placeholder="15" name="trajet" min="0">
+                
+                <label class="field-label" style="margin-top: 16px;">🏋️ Séances par semaine</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="nb-seances" value="2">
+                        <span>2 séances</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="nb-seances" value="3">
+                        <span>3 séances</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="nb-seances" value="4">
+                        <span>4 séances</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="nb-seances" value="5">
+                        <span>5 séances</span>
+                    </label>
+                </div>
+                
+                <label class="field-label" style="margin-top: 16px;">⏳ Durée MAX par séance</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="duree" value="60">
+                        <span>1h</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="duree" value="90">
+                        <span>1h30</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="duree" value="120">
+                        <span>2h</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="final-box">
+                <h3>📄 Télécharge ton planning</h3>
+                <p>Clique pour générer le PDF</p>
+                <button type="button" id="pdfBtn" class="generate-btn" onclick="generatePDF()">
+                    📥 TÉLÉCHARGER LE PDF
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function generatePDF() {
+            const btn = document.getElementById('pdfBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Génération...';
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const form = document.getElementById('planningForm');
+            const formData = new FormData(form);
+            
+            doc.setFontSize(20);
+            doc.setFont(undefined, 'bold');
+            doc.text('MON PLANNING HEBDOMADAIRE', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            let y = 40;
+            
+            const jours = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+            const joursLabel = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI', 'DIMANCHE'];
+            
+            jours.forEach((jour, index) => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text(joursLabel[index], 15, y);
+                y += 8;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                
+                doc.text(`Reveil: ${formData.get(`${jour}-reveil`) || '-'}`, 20, y);
+                y += 6;
+                doc.text(`Coucher: ${formData.get(`${jour}-coucher`) || '-'}`, 20, y);
+                y += 6;
+                doc.text(`Travail: ${formData.get(`${jour}-travail-debut`) || '-'} - ${formData.get(`${jour}-travail-fin`) || '-'}`, 20, y);
+                y += 6;
+                doc.text(`Contraintes: ${formData.get(`${jour}-autre`) || '-'}`, 20, y);
+                y += 12;
+            });
+            
+            if (y > 240) {
+                doc.addPage();
+                y = 20;
+            }
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('INFOS PRATIQUES', 15, y);
+            y += 8;
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Trajet: ${formData.get('trajet') || '-'} min`, 20, y);
+            y += 8;
+            doc.text(`Seances: ${formData.get('nb-seances') || '-'}/semaine`, 20, y);
+            y += 6;
+            doc.text(`Duree max: ${formData.get('duree') || '-'} min`, 20, y);
+            
+            doc.save('Mon_Planning.pdf');
+            
+            btn.disabled = false;
+            btn.textContent = '✅ TÉLÉCHARGÉ !';
+            setTimeout(() => {
+                btn.textContent = '📥 TÉLÉCHARGER LE PDF';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
